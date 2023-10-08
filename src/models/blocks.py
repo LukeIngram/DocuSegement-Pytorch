@@ -7,7 +7,7 @@ import torch.nn.functional as F
 # Applies a 2 convolutions + ReLu activation + batch normalization 
 class ConvBlock(nn.Module): #TODO UNTESTED
     def __init__(self,in_channels,out_channels,mid_channels=None):
-        super.__init__()
+        super().__init__()
 
         if not mid_channels: 
             mid_channels = out_channels
@@ -61,7 +61,7 @@ class Up(nn.Module):
 class Out(nn.Module): 
     def __init__(self,in_channels,out_channels): 
         super().__init__()
-        self.conv = nn.Conv2d(in_channels,out_channels,size=1)
+        self.conv = nn.Conv2d(in_channels,out_channels,kernel_size=1)
     
     def forward(self,dataIn): 
         return self.conv(dataIn)
