@@ -7,10 +7,22 @@ from tqdm import tqdm
 
 import torch
 from torch.utils.data import Dataset
+import torchvision.transforms as vT
 
 
 SUPPORTED_EXTS = ['.png','.jpeg','.jpg','.ppm','.gif','.tiff','.bmp']
 SUPPORTED_SIZE = (312,312)
+
+
+def transform(
+        mean = (0.4611, 0.4359, 0.3905), 
+        std = (0.2193, 0.2150, 0.2109)
+    ):
+    transforms = vT.Compose([
+        vT.ToTensor(),
+        vT.Normalize(mean, std)
+    ])
+    return transforms
 
 
 def load_img(fname): 
@@ -20,34 +32,53 @@ def load_img(fname):
     else: 
         return Image.open(fname)
 
+def preprocess(img, scale_fact: float = 1.0, isMask: bool = False, isTraining: bool = False): 
+    h, w = img.size[:2]
+    h, w = int(h * scale_fact), int(w * scale_fact)
+    img.thumbnail((h, w), Image.Resampling.LANCZOS)
+
+    img = np.asarray(img, dtype=np.float32)
+
+    if isMask: 
+        out = np.zeros((*(h,w), 2), dtype=np.float32) #TODO THIS MAYBE CAUSING OVERTRAINING TO BG CLASS
+        out[:, : , 0] = np.where(out[:, :, 0] == 0, 1.0, 0.0)
+        out[:, : , 1] = np.where(out[:, :, 0] == 255, 1.0, 0.0)
+        out = torch.from_numpy(out.transpose((2, 0, 1)).copy()).long().contiguous()
+
+    else: 
+        out = transform()(img)
+
+    return out
+
 
 class DocumentDataset(Dataset): 
 
-    def __init__(self,img_dir,mask_dir,scaleFact=1.0):
-        self.img_paths = [os.path.join(img_dir,f) for f in tqdm(os.listdir(img_dir),desc="Loading Images")]
-        self.mask_paths = [os.path.join(mask_dir,f) for f in tqdm(os.listdir(mask_dir),desc="Loading Masks")]
-        self.type = type
-        self.scaleFact = scaleFact #TODO IMPLEMENT IMAGE SCALING
+    COLORMAP = {
+        0 : (0, 0, 0), 
+        1 : (255, 255, 255)
+    }
+
+    def __init__(self, img_dir, mask_dir, scale_fact: float = 1.0):
+        self.img_paths = [os.path.join(img_dir,f) for f in os.listdir(img_dir)]
+        self.mask_paths = [os.path.join(mask_dir,f) for f in os.listdir(mask_dir)]
+        self.scale_fact = scale_fact 
     
     def __len__(self): 
-        return len(self.imgs_dir)
+        return len(self.img_paths)
     
     def __getitem__(self, index): 
         img_path = self.img_paths[index]
-        img = np.asarray(load_img(img_path))
-        img = img/255.0
-    
-
         mask_path = self.mask_paths[index]
-        mask = load_img(mask_path)
-        mask = np.zeros((*SUPPORTED_SIZE,2),dtype=np.float32)
 
-        mask[:,:,0] = np.where(mask[:,:,0] == 0,1.0,0.0)
-        mask[:,:,1] = np.where(mask[:,:,0] == 255,1.0,0.0)
+        img = load_img(img_path)
+        mask = load_img(mask_path)
+
+        img = preprocess(img, self.scale_fact, isMask=False)
+        mask = preprocess(mask, self.scale_fact, isMask=True)
 
         return {
-            "image" : torch.from_numpy(img).permute(2,0,1),
-            "mask" : torch.from_numpy(mask).permute(2,0,1)
+            "image" : img,
+            "mask" : mask
         }
         
             

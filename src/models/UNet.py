@@ -7,10 +7,11 @@ from .blocks import *
 
 #TODO UNet 
 class UNet(nn.Module): 
-    def __init__(self,n_channels,n_classes,n_blocks=3,start=32): 
+    def __init__(self,n_channels,n_classes,n_blocks=4,start=32): 
         super(UNet,self).__init__()
     
         self.n_blocks = n_blocks
+        self.n_classes = n_classes
         
         # Define Layers #TODO
         self.layers = nn.Sequential(
@@ -44,3 +45,7 @@ class UNet(nn.Module):
             start_mult = start * 2 ** i
             blocks.append(Up(start_mult * 2,start_mult))
         return blocks
+    
+    def __str__(self): 
+        return 'UNet'
+    
