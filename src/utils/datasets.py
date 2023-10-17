@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 import torchvision.transforms as vT
 
 
-SUPPORTED_EXTS = ['.png','.jpeg','.jpg','.ppm','.gif','.tiff','.bmp']
+SUPPORTED_EXTS = ['.png','.jpeg','.jpg','.ppm','.gif','.tiff','.bmp','.JPG']
 SUPPORTED_SIZE = (312,312)
 
 
@@ -20,7 +20,7 @@ def transform(
     ):
     transforms = vT.Compose([
         vT.ToTensor(),
-        vT.Normalize(mean, std)
+        #vT.Normalize(mean, std)
     ])
     return transforms
 
@@ -40,13 +40,19 @@ def preprocess(img, scale_fact: float = 1.0, isMask: bool = False, isTraining: b
     img = np.asarray(img, dtype=np.float32)
 
     if isMask: 
-        out = np.zeros((*(h,w), 2), dtype=np.float32) #TODO THIS MAYBE CAUSING OVERTRAINING TO BG CLASS
-        out[:, : , 0] = np.where(out[:, :, 0] == 0, 1.0, 0.0)
-        out[:, : , 1] = np.where(out[:, :, 0] == 255, 1.0, 0.0)
+        out = np.zeros((*(h,w), 2), dtype=np.float32) 
+        out[:, : , 0] = np.where(img[:, :, 0] == 0, 1.0, 0.0)
+        out[:, : , 1] = np.where(img[:, :, 0] == 255, 1.0, 0.0)
+        
         out = torch.from_numpy(out.transpose((2, 0, 1)).copy()).long().contiguous()
+
+        if not out.any(): 
+            print("zero mask loaded")
+
 
     else: 
         out = transform()(img)
+        out = out / 255.0
 
     return out
 

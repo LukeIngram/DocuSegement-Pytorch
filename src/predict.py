@@ -15,35 +15,23 @@ from models import *
 #TODO
 def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.0, out_threshhold: float = 0.5):
     model.eval()
-    print(not np.asarray(input).transpose(2,0,1).any() )
-    img = torch.from_numpy(preprocess(input, scale_fact, isMask=False))
+
+    img = preprocess(input, scale_fact, isMask=False)
     img = img.unsqueeze(0) 
     img = img.to(device)
 
+    with torch.no_grad(): 
+        pred = model(img).cpu()
+        logits = F.sigmoid(pred).float()
+        logits  = logits.argmax(dim=1)
     
-    pred = model(img).cpu()
-    print(pred.shape)
-    print(pred)
-    mask = pred.argmax(dim=1)
-    print(not mask.any())
-    print(mask.shape)
-    return mask[0].squeeze().numpy()
+    return logits[0].long().squeeze().numpy()
 
 
 def mask_2_img(mask: np.array, mask_vals): 
-    print(not mask.any())
-   # print(np.abs(mask[0]) > np.abs(mask[1]))
-    print(mask)
-    #mask = np.argmax(mask, axis=0)
-    print(mask.shape)
-    print(mask)
-
-    print(not mask.any())
     img = np.zeros((mask.shape[-2], mask.shape[-1], 3), dtype=np.uint8)
-    mask = np.argmax(mask, axis=0)
-    
-    for i,v in enumerate(mask_vals): 
-        img[mask == i] = v
+    for label, _ in enumerate(np.unique(mask)): 
+                img[mask == label] = DocumentDataset.COLORMAP.get(label)
     
     return Image.fromarray(img)
 
@@ -52,7 +40,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-m', '--model', required=True)
-    parser.add_argument('-wf', '--weight_file', required=True)
+    parser.add_argument('-w', '--weight_file', required=True)
     parser.add_argument('-ip', '--input_paths', nargs='+')
     parser.add_argument('-od', '--output_dir', required=True)
     parser.add_argument('-sc', '--scale_fact', type=float, default=1.0)
@@ -66,16 +54,16 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     match args.model:
-        case 'FCN':
+        case 'fcn':
             model = FCN()
-        case 'UNet':
-            model =  UNet(n_channels=3,n_classes=2,n_blocks=1,start=32) 
+        case 'unet':
+            model =  UNet(n_channels=3,n_classes=2,n_blocks=4,start=32) 
         case _:
             raise ValueError(f'Invalid model option \'{args.model}\'')
     
     state_dict = torch.load(os.path.join('models', 'saves', f'{args.weight_file}'), map_location=device)
     mask_vals = state_dict.pop('mask_values', [0, 1])
-    print(type(mask_vals[0]))
+
     model.load_state_dict(state_dict)
     model.to(device)
     

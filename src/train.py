@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import DataLoader
+import torchvision.models.segmentation as seg
+from torchsummary import summary
 
 from tqdm import tqdm 
 import matplotlib.pyplot as plt
@@ -34,7 +36,7 @@ def train(
         learning_rate: float = 3e-4, 
         scale_fact: float = 1.0,
         verbose: bool = False,
-        use_dice_iou = True, 
+        use_dice_iou: bool = True, 
     ):
 
     training_summary = []
@@ -53,7 +55,7 @@ def train(
             Training with config: 
               Model:            {model}
               Device:           {device}
-              SaveFile:         {save_name}.pth
+              SaveFile:         {model}_{save_name}.pth
               Epochs:           {epochs}
               Batch Size:       {batch_size}
               Training Size:    {len(train)}
@@ -63,8 +65,7 @@ def train(
         ''')
 
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    criterion = nn.CrossEntropyLoss()
-    #criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCEWithLogitsLoss()
 
     for epoch in range(1, epochs + 1): 
         sampleCnt = 0
@@ -77,7 +78,6 @@ def train(
             optimizer.zero_grad()
        
             for batch in train_loader: 
-                optimizer.zero_grad()
                 inputs, truth = batch['image'], batch['mask'] 
 
                 # Forward Pass
@@ -86,35 +86,24 @@ def train(
 
                 pred = model(inputs)
 
-                # DEBUG
-                logits = F.softmax(pred.float(), dim=1).float()
-                logits = logits.to('cpu')
-                logits  = logits.argmax(dim=1)
-                temp = logits[0].long().squeeze().numpy()
-                temp1 = np.zeros((temp.shape[-2], temp.shape[-1], 3), dtype=np.uint8)
-                for label,color in enumerate(np.unique(temp)): 
-                    temp1[temp == label] = DocumentDataset.COLORMAP.get(label)
-                temp1 = Image.fromarray(temp1)
-                temp1.save("E:\\GitHub\\docUNET-Pytorch\\samples\\pred\\debug.png", format='png')
-
                 # Compute Loss 
                 loss = criterion(pred.squeeze(1), truth.float())
                 dice = dice_loss(
-                    F.softmax(pred, dim=1).float(),
+                    F.sigmoid(pred).float(),
                     truth,
                     multiclass = (model.n_classes > 1)
                     )
                 training_dice += inputs.shape[0] * (1.-dice.item())
 
                 iou = IoU_loss(
-                    F.softmax(pred, dim=1).float(),
+                    F.sigmoid(pred).float(),
                     truth,
                     multiclass = (model.n_classes > 1)
                     )
                 training_iou += inputs.shape[0] * (1.-iou.item())
 
-                #if use_dice_iou: 
-                loss += dice + iou
+                if use_dice_iou: 
+                    loss += (1.-dice) + (1.-iou)
 
                 training_loss += inputs.shape[0] * loss.item()
                 sampleCnt += inputs.shape[0]
@@ -127,15 +116,14 @@ def train(
                 pbar.update(1)
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
                 pbar.set_description(f"Epoch {epoch}/{epochs} : training Loss {round(training_loss/sampleCnt,6)}")
-
-                #TODO EVALUATION
         
+        # Generate Summary
         epoch_summary = {}
         epoch_summary['loss'] = training_loss / sampleCnt
         epoch_summary['dice'] = training_dice / sampleCnt
         epoch_summary['iou'] = training_iou / sampleCnt
 
-        eval_summary = evaluate(model, val_loader, device, epoch, epochs, criterion)
+        eval_summary = evaluate(model, val_loader, device, epoch, epochs, criterion, use_dice_iou)
 
         if verbose: 
             print(f'''
@@ -150,6 +138,7 @@ def train(
 
         training_summary.append({'training' : epoch_summary, 'validation' : eval_summary})
 
+    # Save state_dict
     if verbose: 
         print(f"Saving Model Weights to {os.path.join('models', 'saves', f'{model}_{save_name}')}.pth")
     try:
@@ -187,7 +176,7 @@ def plot_summary(summary,save_name):
     
 
 
-def get_args(): #TODO ADD HELP DESCRIPTIONS
+def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-nb', '--num_blocks', type=int, default=4)
@@ -200,11 +189,11 @@ def get_args(): #TODO ADD HELP DESCRIPTIONS
     parser.add_argument('-m', '--model', type=str, default='unet')
     parser.add_argument('-sn', '--save_name', type=str, required=True)
     parser.add_argument('-vbo', '--verbose', action='store_true')
-    parser.add_argument('-udo', '--use_dice_and_iou', action='store_true')
+    parser.add_argument('-udi', '--use_dice_and_iou', action='store_true')
     
     return parser.parse_args()
 
-# SAMPLE CMD STRING: train.py -nb 1 -n 1 -bs 8 -tdp ..\data\document_dataset_resized\train\images\ ..\data\document_dataset_resized\train\masks\ -vdp ..\data\document_dataset_resized\valid\images\ ..\data\document_dataset_resized\valid\masks\ -sn debugging_1 -vbo -udo
+# SAMPLE CMD STRING: train.py -nb 1 -n 1 -bs 8 -tdp ..\data\document_dataset_resized\train\images\ ..\data\document_dataset_resized\train\masks\ -vdp ..\data\document_dataset_resized\valid\images\ ..\data\document_dataset_resized\valid\masks\ -sn debugging_1 -vbo -udi
 
 if __name__ == '__main__': 
     args = get_args()
@@ -216,10 +205,20 @@ if __name__ == '__main__':
             model = FCN()
         case 'unet':
             model =  UNet(n_channels=3,n_classes=2,n_blocks=args.num_blocks,start=32) 
+        case 'deeplabv3': 
+            #model = seg.deeplabv3_resnet101(pretrained=False, num_classes=2)
+            model = seg.deeplabv3_resnet101(weights='DEFAULT')
+            model.classifier[4] = nn.LazyConv2d(2, 1)
+            model.aux_classifier[4] = nn.LazyConv2d(2, 1)
+
+
         case _:
             raise ValueError(f'Invalid model option \'{args.model}\'')
     
     model.to(device)
+
+    if args.verbose: 
+        print(summary(model, (3, 244, 244)))
 
     data = train(
         model=model,

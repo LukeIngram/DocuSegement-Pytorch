@@ -13,10 +13,10 @@ class ConvBlock(nn.Module): #TODO UNTESTED
             mid_channels = out_channels
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels,mid_channels,kernel_size=3,padding=1), 
+            nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False), 
             nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True), # MAYBE inplace=True
-            nn.Conv2d(mid_channels,out_channels,kernel_size=3,padding=1),
+            nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_channels), 
             nn.ReLU(inplace=True)  # MAYBE inplace=True
         )
@@ -31,7 +31,7 @@ class Down(nn.Module):
         
         self.pool = nn.Sequential(
             nn.MaxPool2d(kernel_size=2),
-            ConvBlock(in_channels,out_channels)
+            ConvBlock(in_channels, out_channels)
         )
     
     def forward(self,dataIn): 
@@ -53,9 +53,9 @@ class Up(nn.Module):
         diffY = skipIn.size()[2] - upsampled.size()[2]
         diffX = skipIn.size()[3] - upsampled.size()[3]
 
-        upsampled = F.pad(upsampled,[diffY//2,diffY-diffX // 2,diffY//2,diffY-diffX // 2])
+        upsampled = F.pad(upsampled,[diffY//2, diffY-diffX // 2,diffY//2, diffY-diffX // 2])
 
-        out = torch.cat([skipIn,upsampled],dim=1)
+        out = torch.cat([skipIn, upsampled], dim=1)
         return self.conv(out)
 
 class Out(nn.Module): 

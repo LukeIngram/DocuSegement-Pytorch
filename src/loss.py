@@ -46,11 +46,12 @@ def IoU_coeff(input: Tensor, target: Tensor, eps: float  = 1e-6):
     sets_sum = torch.where(sets_sum == 0, inter, sets_sum)
 
     # Calculate & return IoU score
-    return (inter + eps) / (sets_sum - inter + eps)
+    iou = (inter + eps) / (sets_sum - inter + eps)
+    return iou.mean()
 
 
 def multiclass_IoU_coeff(input: Tensor, target: Tensor, eps: float = 1e-6): 
-    return IoU_coeff(input.flatten(0, 1), target.flatten(0, 1)) 
+    return IoU_coeff(input.flatten(0, 1), target.flatten(0, 1), eps) 
 
     
 def IoU_loss(input: Tensor, target: Tensor, multiclass: bool = False): 

@@ -8,7 +8,7 @@ from tqdm import tqdm
 from loss import * 
 
 @torch.inference_mode()
-def evaluate(model, loader, device, epoch, epochs, criterion): 
+def evaluate(model, loader, device, epoch, epochs, criterion, use_dice_iou: bool = True): 
     val_loss, val_dice, val_iou = 0, 0, 0 
 
     with tqdm(loader,desc=f'Epoch {epoch}/{epochs} : val Loss 0') as pbar: 
@@ -26,18 +26,21 @@ def evaluate(model, loader, device, epoch, epochs, criterion):
             loss = criterion(pred.squeeze(1), truth.float()) 
 
             dice = dice_loss(
-                    F.softmax(pred, dim=1).float(),
+                    F.sigmoid(pred).float(),
                     truth,
-                    multiclass= (model.n_classes > 2)
+                    multiclass = (model.n_classes > 2)
                     )
             val_dice += inputs.shape[0] * (1.-dice.item())
 
             iou = IoU_loss(
-                F.softmax(pred, dim=1).float(),
+                F.sigmoid(pred).float(),
                 truth,
                 multiclass = (model.n_classes > 2)
                 )
             val_iou += inputs.shape[0] * (1.-iou.item())
+
+            if use_dice_iou: 
+                loss += (1.-dice) + (1.-iou)
 
             val_loss += loss.item() * inputs.shape[0]
             sampleCnt += inputs.shape[0]
