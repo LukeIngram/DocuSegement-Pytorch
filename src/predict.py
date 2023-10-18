@@ -12,8 +12,7 @@ from utils.datasets import *
 from models import * 
 
 
-#TODO
-def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.0, out_threshhold: float = 0.5):
+def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.0):
     model.eval()
 
     img = preprocess(input, scale_fact, isMask=False)
@@ -30,10 +29,10 @@ def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.
 
 def mask_2_img(mask: np.array, mask_vals): 
     img = np.zeros((mask.shape[-2], mask.shape[-1], 3), dtype=np.uint8)
-    for label, _ in enumerate(np.unique(mask)): 
+    for label in mask_vals: 
                 img[mask == label] = DocumentDataset.COLORMAP.get(label)
-    
     return Image.fromarray(img)
+
 
 #TODO add help descriptions
 def get_args(): 
@@ -42,7 +41,7 @@ def get_args():
     parser.add_argument('-m', '--model', required=True)
     parser.add_argument('-w', '--weight_file', required=True)
     parser.add_argument('-ip', '--input_paths', nargs='+')
-    parser.add_argument('-od', '--output_dir', required=True)
+    parser.add_argument('-odir', '--output_dir', required=True)
     parser.add_argument('-sc', '--scale_fact', type=float, default=1.0)
     
     return parser.parse_args()
@@ -70,13 +69,11 @@ if __name__ == '__main__':
     input_paths = args.input_paths
     output_dir = args.output_dir
 
-    for i,fpath in enumerate(os.listdir("E:\\GitHub\\docUNET-Pytorch\\samples\\imgs\\")): 
-        fname = os.path.basename(fpath) 
-
-        img = load_img("E:\\GitHub\\docUNET-Pytorch\\samples\\imgs\\" +fpath)
-        pred_mask = predict(model=model, input=img, device=device, scale_fact=args.scale_fact)
+    for i,fpath in enumerate(input_paths): 
+        fname = os.path.basename(fpath)
+        img = load_img(fpath)
+        pred_mask = predict(model, img, device, args.scale_fact)
         pred_img = mask_2_img(pred_mask, mask_vals)
-
         pred_img.save(os.path.join(output_dir,fname), format='png')
 
 

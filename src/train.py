@@ -65,6 +65,7 @@ def train(
         ''')
 
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)
     criterion = nn.BCEWithLogitsLoss()
 
     for epoch in range(1, epochs + 1): 
@@ -93,14 +94,14 @@ def train(
                     truth,
                     multiclass = (model.n_classes > 1)
                     )
-                training_dice += inputs.shape[0] * (1.-dice.item())
+                training_dice += inputs.shape[0] * (dice.item())
 
                 iou = IoU_loss(
                     F.sigmoid(pred).float(),
                     truth,
                     multiclass = (model.n_classes > 1)
                     )
-                training_iou += inputs.shape[0] * (1.-iou.item())
+                training_iou += inputs.shape[0] * (iou.item())
 
                 if use_dice_iou: 
                     loss += (1.-dice) + (1.-iou)
@@ -124,6 +125,8 @@ def train(
         epoch_summary['iou'] = training_iou / sampleCnt
 
         eval_summary = evaluate(model, val_loader, device, epoch, epochs, criterion, use_dice_iou)
+        scheduler.step(eval_summary['dice'] + eval_summary['iou'])
+
 
         if verbose: 
             print(f'''
@@ -205,13 +208,6 @@ if __name__ == '__main__':
             model = FCN()
         case 'unet':
             model =  UNet(n_channels=3,n_classes=2,n_blocks=args.num_blocks,start=32) 
-        case 'deeplabv3': 
-            #model = seg.deeplabv3_resnet101(pretrained=False, num_classes=2)
-            model = seg.deeplabv3_resnet101(weights='DEFAULT')
-            model.classifier[4] = nn.LazyConv2d(2, 1)
-            model.aux_classifier[4] = nn.LazyConv2d(2, 1)
-
-
         case _:
             raise ValueError(f'Invalid model option \'{args.model}\'')
     

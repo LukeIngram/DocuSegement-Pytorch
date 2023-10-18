@@ -30,14 +30,14 @@ def evaluate(model, loader, device, epoch, epochs, criterion, use_dice_iou: bool
                     truth,
                     multiclass = (model.n_classes > 2)
                     )
-            val_dice += inputs.shape[0] * (1.-dice.item())
+            val_dice += inputs.shape[0] * (dice.item())
 
             iou = IoU_loss(
                 F.sigmoid(pred).float(),
                 truth,
                 multiclass = (model.n_classes > 2)
                 )
-            val_iou += inputs.shape[0] * (1.-iou.item())
+            val_iou += inputs.shape[0] * (iou.item())
 
             if use_dice_iou: 
                 loss += (1.-dice) + (1.-iou)
