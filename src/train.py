@@ -8,7 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import DataLoader
-import torchvision.models.segmentation as seg
 from torchsummary import summary
 
 from tqdm import tqdm 
@@ -19,10 +18,6 @@ from models import *
 from utils.datasets import DocumentDataset
 from loss import dice_loss, IoU_loss
 from evaluate import evaluate
-
-#DEBUG 
-from PIL import Image
-import numpy as np
 
 
 def train(
@@ -41,12 +36,11 @@ def train(
 
     training_summary = []
 
-    # Load Datasets
-    train = DocumentDataset(*train_data_paths,scale_fact)    
-    val = DocumentDataset(*validation_data_paths,scale_fact)
+    # Create & Load Datasets
+    train = DocumentDataset(*train_data_paths, scale_fact)    
+    val = DocumentDataset(*validation_data_paths, scale_fact)
 
     args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
-
     train_loader = DataLoader(train, shuffle=True, **args)
     val_loader = DataLoader(val, shuffle=False, drop_last=True, **args)
 
@@ -68,7 +62,7 @@ def train(
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)
     criterion = nn.BCEWithLogitsLoss()
 
-    for epoch in range(1, epochs + 1): 
+    for epoch in range(1, epochs+1): 
         sampleCnt = 0
         training_loss = 0
         training_dice = 0
@@ -89,20 +83,13 @@ def train(
 
                 # Compute Loss 
                 loss = criterion(pred.squeeze(1), truth.float())
-                dice = dice_loss(
-                    F.sigmoid(pred).float(),
-                    truth,
-                    multiclass = (model.n_classes > 1)
-                    )
+                dice = dice_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
                 training_dice += inputs.shape[0] * (dice.item())
 
-                iou = IoU_loss(
-                    F.sigmoid(pred).float(),
-                    truth,
-                    multiclass = (model.n_classes > 1)
-                    )
+                iou = IoU_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
                 training_iou += inputs.shape[0] * (iou.item())
 
+                # add iou & dice score to BCE Loss 
                 if use_dice_iou: 
                     loss += (1.-dice) + (1.-iou)
 
@@ -127,7 +114,6 @@ def train(
         eval_summary = evaluate(model, val_loader, device, epoch, epochs, criterion, use_dice_iou)
         scheduler.step(eval_summary['dice'] + eval_summary['iou'])
 
-
         if verbose: 
             print(f'''
                 Epoch {epoch} Summary: 
@@ -141,7 +127,7 @@ def train(
 
         training_summary.append({'training' : epoch_summary, 'validation' : eval_summary})
 
-    # Save state_dict
+    # Save state dict to saves dir 
     if verbose: 
         print(f"Saving Model Weights to {os.path.join('models', 'saves', f'{model}_{save_name}')}.pth")
     try:
@@ -152,7 +138,7 @@ def train(
     return training_summary
 
 
-
+# Plots loss, dice, and iou scores & displays to user
 def plot_summary(summary,save_name):
     n_plots = len(summary[0]['training'])
     fig, axes = plt.subplots(n_plots, 1, figsize=(10, 10))
@@ -189,7 +175,6 @@ def get_args():
     parser.add_argument('-sc', '--scale_factor',type=float,default=1)
     parser.add_argument('-tdp', '--train_data_paths', type=str, nargs='+')
     parser.add_argument('-vdp', '--validation_data_paths', type=str, nargs='+')
-    parser.add_argument('-m', '--model', type=str, default='unet')
     parser.add_argument('-sn', '--save_name', type=str, required=True)
     parser.add_argument('-vbo', '--verbose', action='store_true')
     parser.add_argument('-udi', '--use_dice_and_iou', action='store_true')
@@ -203,14 +188,7 @@ if __name__ == '__main__':
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    match args.model:
-        case 'fcn':
-            model = FCN()
-        case 'unet':
-            model =  UNet(n_channels=3,n_classes=2,n_blocks=args.num_blocks,start=32) 
-        case _:
-            raise ValueError(f'Invalid model option \'{args.model}\'')
-    
+    model =  UNet(n_channels=3,n_classes=2,n_blocks=args.num_blocks,start=32) 
     model.to(device)
 
     if args.verbose: 

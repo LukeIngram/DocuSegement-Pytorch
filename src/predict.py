@@ -38,7 +38,6 @@ def mask_2_img(mask: np.array, mask_vals):
 def get_args(): 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-m', '--model', required=True)
     parser.add_argument('-w', '--weight_file', required=True)
     parser.add_argument('-ip', '--input_paths', nargs='+')
     parser.add_argument('-odir', '--output_dir', required=True)
@@ -52,14 +51,8 @@ if __name__ == '__main__':
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    match args.model:
-        case 'fcn':
-            model = FCN()
-        case 'unet':
-            model =  UNet(n_channels=3,n_classes=2,n_blocks=4,start=32) 
-        case _:
-            raise ValueError(f'Invalid model option \'{args.model}\'')
-    
+    model =  UNet(n_channels=3, n_classes=2, n_blocks=4, start=32) 
+       
     state_dict = torch.load(os.path.join('models', 'saves', f'{args.weight_file}'), map_location=device)
     mask_vals = state_dict.pop('mask_values', [0, 1])
 
@@ -74,7 +67,7 @@ if __name__ == '__main__':
         img = load_img(fpath)
         pred_mask = predict(model, img, device, args.scale_fact)
         pred_img = mask_2_img(pred_mask, mask_vals)
-        pred_img.save(os.path.join(output_dir,fname), format='png')
+        pred_img.save(os.path.join(output_dir, fname), format='png')
 
 
 

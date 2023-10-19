@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # Applies a 2 convolutions + ReLu activation + batch normalization 
-class ConvBlock(nn.Module): #TODO UNTESTED
+class ConvBlock(nn.Module): 
     def __init__(self, in_channels, out_channels, mid_channels=None):
         super().__init__()
 
@@ -15,16 +15,16 @@ class ConvBlock(nn.Module): #TODO UNTESTED
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),  
             nn.BatchNorm2d(mid_channels), 
-            nn.ReLU(inplace=True),  # MAYBE inplace=True
+            nn.ReLU(inplace=True), 
             nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False), 
             nn.BatchNorm2d(out_channels),  
-            nn.ReLU(inplace=True)  # MAYBE inplace=True
+            nn.ReLU(inplace=True)  
         )
         
     def forward(self, dataIn): 
         return self.conv(dataIn)
 
-#TODO Down
+
 class Down(nn.Module): 
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -37,7 +37,6 @@ class Down(nn.Module):
     def forward(self, dataIn): 
         return self.pool(dataIn)
 
-#TODO Up
 class Up(nn.Module): 
     def __init__(self, in_channels, out_channels):
         super().__init__()    

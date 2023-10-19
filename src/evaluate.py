@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from loss import * 
 
+
 @torch.inference_mode()
 def evaluate(model, loader, device, epoch, epochs, criterion, use_dice_iou: bool = True): 
     val_loss, val_dice, val_iou = 0, 0, 0 

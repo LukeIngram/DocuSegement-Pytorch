@@ -4,8 +4,6 @@ import torch.nn as nn
 
 from .blocks import * 
 
-
-#TODO UNet 
 class UNet(nn.Module): 
     def __init__(self, n_channels, n_classes, n_blocks=4, start=32): 
         super(UNet, self).__init__()
@@ -13,7 +11,7 @@ class UNet(nn.Module):
         self.n_blocks = n_blocks
         self.n_classes = n_classes
         
-        # Define Layers #TODO
+  
         self.layers = nn.Sequential(
             ConvBlock(n_channels, start), 
             *self.get_blocks(start), 
