@@ -160,6 +160,7 @@ cython_debug/
 #.idea/
 
 data/*/
+sample_cmds.txt
 
 # darwin
 .DS_store
