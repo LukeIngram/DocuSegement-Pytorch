@@ -11,20 +11,24 @@ import torchvision.transforms as vT
 
 SUPPORTED_EXTS = ['.png','.jpeg','.jpg','.ppm','.gif','.tiff','.bmp','.JPG']
 
-
-def transform():
-    transforms = vT.Compose([vT.ToTensor()])
+def transform(
+        mean=(0.4611, 0.4359, 0.3905), 
+        std=(0.2193, 0.2150, 0.2109)
+    ): 
+    transforms = vT.Compose([
+        vT.ToTensor(),
+        vT.Normalize(mean, std)
+    ])
     return transforms
 
-
-def load_img(fname): 
+def load_img(fname: str) -> Image: 
     ext = os.path.splitext(fname)[1]
     if ext not in SUPPORTED_EXTS: 
         raise ValueError(f"Unsupported filetype {ext}. Must be " + ', '.join(SUPPORTED_EXTS))
     else: 
         return Image.open(fname)
 
-def preprocess(img, scale_fact: float = 1.0, isMask: bool = False, isTraining: bool = False): 
+def preprocess(img, scale_fact: float = 1.0, isMask: bool = False) -> torch.Tensor: 
     h, w = img.size[:2]
     h, w = int(h * scale_fact), int(w * scale_fact)
     img.thumbnail((h, w), Image.Resampling.LANCZOS)
@@ -38,13 +42,8 @@ def preprocess(img, scale_fact: float = 1.0, isMask: bool = False, isTraining: b
         
         out = torch.from_numpy(out.transpose((2, 0, 1)).copy()).long().contiguous()
 
-        if not out.any(): 
-            print("zero mask loaded")
-
-
     else: 
         out = transform()(img)
-        out = out / 255.0
 
     return out
 
@@ -56,15 +55,15 @@ class DocumentDataset(Dataset):
         1 : (255, 255, 255)
     }
 
-    def __init__(self, img_dir, mask_dir, scale_fact: float = 1.0):
+    def __init__(self, img_dir: str, mask_dir: str, scale_fact: float = 1.0) -> None:
         self.img_paths = [os.path.join(img_dir,f) for f in os.listdir(img_dir)]
         self.mask_paths = [os.path.join(mask_dir,f) for f in os.listdir(mask_dir)]
         self.scale_fact = scale_fact 
     
-    def __len__(self): 
+    def __len__(self) -> int: 
         return len(self.img_paths)
     
-    def __getitem__(self, index): 
+    def __getitem__(self, index) -> [torch.Tensor, torch.Tensor]: 
         img_path = self.img_paths[index]
         mask_path = self.mask_paths[index]
 

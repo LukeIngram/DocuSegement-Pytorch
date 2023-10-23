@@ -24,31 +24,24 @@ def evaluate(model, loader, device, epoch, epochs, criterion, use_dice_iou: bool
 
             pred = model(inputs)
 
-            loss = criterion(pred.squeeze(1), truth.float()) 
+            loss = criterion(pred, truth.float()) 
 
-            dice = dice_loss(
-                    F.sigmoid(pred).float(),
-                    truth,
-                    multiclass = (model.n_classes > 2)
-                    )
-            val_dice += inputs.shape[0] * (dice.item())
+            dice = dice_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
+            val_dice += inputs.shape[0] * (1.-dice.item())
 
-            iou = IoU_loss(
-                F.sigmoid(pred).float(),
-                truth,
-                multiclass = (model.n_classes > 2)
-                )
-            val_iou += inputs.shape[0] * (iou.item())
+            iou = IoU_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
+            val_iou += inputs.shape[0] * (1.-iou.item())
 
             if use_dice_iou: 
-                loss += (1.-dice) + (1.-iou)
+                loss += dice 
+                loss += iou
 
             val_loss += loss.item() * inputs.shape[0]
             sampleCnt += inputs.shape[0]
 
             pbar.update(1) 
 
-            pbar.set_description(f'Epoch {epoch}/{epochs} : val Loss {round(val_loss/sampleCnt,6)}')
+            pbar.set_description(f'Epoch {epoch}/{epochs} : val Loss {round(val_loss/sampleCnt, 6)}')
 
     summary = {}
     summary['loss'] = val_loss / sampleCnt

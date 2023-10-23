@@ -2,7 +2,6 @@
 
 import os
 import argparse
-import configparser
 
 import torch
 import torch.nn as nn
@@ -10,6 +9,7 @@ import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import DataLoader
 from torchsummary import summary
+from torch.cuda import amp
 
 from tqdm import tqdm 
 import matplotlib.pyplot as plt
@@ -51,7 +51,7 @@ def train(
               Model:            {model}
               Device:           {device}
               SaveFile:         {save_name}.pth
-              Epochs:           {epochs}
+              Epoch(s):         {epochs}
               Batch Size:       {batch_size}
               Training Size:    {len(train)}
               Validation Size:  {len(val)}
@@ -60,8 +60,9 @@ def train(
         ''')
 
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)
-    criterion = nn.BCEWithLogitsLoss()
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)
+    scaler = amp.GradScaler()
+    criterion = nn.CrossEntropyLoss if (model.n_classes > 2) else nn.BCEWithLogitsLoss()
 
     for epoch in range(1, epochs+1): 
         sampleCnt = 0
@@ -74,33 +75,37 @@ def train(
             optimizer.zero_grad()
        
             for batch in train_loader: 
+                # Fetch inputs & masks from batch
                 inputs, truth = batch['image'], batch['mask'] 
-
-                # Forward Pass
                 inputs = inputs.to(device) 
                 truth = truth.to(device, dtype=torch.long)
 
-                pred = model(inputs)
+                # Forward Pass
+                with amp.autocast():
+                    pred = model(inputs)
 
-                # Compute Loss 
-                loss = criterion(pred.squeeze(1), truth.float())
-                dice = dice_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
-                training_dice += inputs.shape[0] * (dice.item())
+                    # Compute Loss 
+                    loss = criterion(pred, truth.float())
 
-                iou = IoU_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
-                training_iou += inputs.shape[0] * (iou.item())
+                    dice = dice_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
+                    training_dice += inputs.shape[0] * (1.-dice.item())
 
-                # add iou & dice score to BCE Loss 
-                if use_dice_iou: 
-                    loss += (1.-dice) + (1.-iou)
+                    iou = IoU_loss(F.sigmoid(pred).float(), truth, multiclass = (model.n_classes > 2))
+                    training_iou += inputs.shape[0] * (1.-iou.item())
 
-                training_loss += inputs.shape[0] * loss.item()
-                sampleCnt += inputs.shape[0]
+                    # add iou & dice score to BCE or CE Loss 
+                    if use_dice_iou: 
+                        loss += dice
+                        loss += iou
+
+                    training_loss += inputs.shape[0] * loss.item()
+                    sampleCnt += inputs.shape[0]
 
                 # Step & backward pass
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad(set_to_none=True) 
-                loss.backward()
-                optimizer.step()
 
                 pbar.update(1)
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
@@ -113,7 +118,7 @@ def train(
         epoch_summary['iou'] = training_iou / sampleCnt
 
         eval_summary = evaluate(model, val_loader, device, epoch, epochs, criterion, use_dice_iou)
-        scheduler.step(eval_summary['dice'] + eval_summary['iou'])
+        scheduler.step(eval_summary['dice'] + eval_summary['iou']) 
 
         if verbose: 
             print(f'''
@@ -175,27 +180,23 @@ def plot_summary(summary,save_name):
 
 
 def get_args():
-    config = configparser.ConfigParser()
-    config.read(os.path.join('utils', 'cmdHelp.ini'))
-    helpStrs = config['Train']
+    parser = argparse.ArgumentParser()
 
-    parser = argparse.ArgumentParser() 
-    parser.add_argument('-nb', '--num_blocks', metavar='N', type=int, default=4, help=helpStrs['num_blocks'])
-    parser.add_argument('-nc', '--num_start_channels', metavar='N', type=int, default=32, help=helpStrs['num_start_channels'])
-    parser.add_argument('-n', '--num_epochs', metavar='N', type=int, default=15, help=helpStrs['num_epochs'])
-    parser.add_argument('-lr', '--learning_rate', metavar='eta', type=float, default=3e-4, help=helpStrs['learning_rate'])
-    parser.add_argument('-bs', '--batch_size', metavar='b', type=int, default=8, help=helpStrs['batch_size'])
-    parser.add_argument('-sc', '--scale_fact', metavar='s', type=float,default=1, help=helpStrs['scale_fact'])
-    parser.add_argument('-tdp', '--train_data_paths', metavar='path', type=str, nargs='+', help=helpStrs['tdp'])
-    parser.add_argument('-vdp', '--validation_data_paths', metavar='path', type=str, nargs='+', help=helpStrs['vdp'])
-    parser.add_argument('-sn', '--save_name', metavar='filename', type=str, required=True, help=helpStrs['save_name'])
-    parser.add_argument('-vbo', '--verbose', action='store_true', help=helpStrs['verbose'])
-    parser.add_argument('-udi', '--use_dice_and_iou', action='store_true', help=helpStrs['udi'])
+    parser.add_argument('-nb', '--num_blocks', metavar='N', type=int, default=4, help="Number of down sampling & upsampling blocks featured in the UNet.")
+    parser.add_argument('-nc', '--num_start_channels', metavar='N', type=int, default=32, help="Number of channels after the first convolution block.")
+    parser.add_argument('-n', '--num_epochs', metavar='N', type=int, default=15, help="Number of epochs.")
+    parser.add_argument('-lr', '--learning_rate', metavar='eta', type=float, default=3e-4, help="Learning Rate.")
+    parser.add_argument('-bs', '--batch_size', metavar='b', type=int, default=8, help="Batch Size.")
+    parser.add_argument('-c', '--num_classes', metavar='c', type=int, default=2, help='Number of classes')
+    parser.add_argument('-sc', '--scale_fact', metavar='s', type=float,default=1, help="Factor to reduce / increase the inputs by.")
+    parser.add_argument('-d', '--device', type=str, default='cuda:0', help='Device to run model.')
+    parser.add_argument('-tdp', '--train_data_paths', metavar='path', type=str, nargs='+', help="Paths of training image and mask directories.")
+    parser.add_argument('-vdp', '--validation_data_paths', metavar='path', type=str, nargs='+', help="Paths of validation image and mask directories.")
+    parser.add_argument('-sn', '--save_name', metavar='filename', type=str, required=True, help="Same of save file (.pth).")
+    parser.add_argument('-vbo', '--verbose', action='store_true', help="Verbose Output.")
+    parser.add_argument('-udi', '--use_dice_and_iou', action='store_true', help="Add DICE and IoU score to loss during training.")
     
     return parser.parse_args()
-
-# TODO REMOVE 
-# SAMPLE CMD STRING: train.py -nb 1 -n 1 -bs 8 -tdp ..\data\document_dataset_resized\train\images\ ..\data\document_dataset_resized\train\masks\ -vdp ..\data\document_dataset_resized\valid\images\ ..\data\document_dataset_resized\valid\masks\ -sn debugging_1 -vbo -udi
 
 if __name__ == '__main__': 
     args = get_args()

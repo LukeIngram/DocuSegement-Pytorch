@@ -132,15 +132,17 @@ TODO
 
 ## **Results**
 
-### **DICE & IoU**
+| Experiment Name | 
 
-### 
+
+
 
 
 ## **Future Work**
 
 - SRGAN-Based Upsampling: to allow flexible and accurate training of model on higher resolutions. 
-- 
+- Config file based args instead of passing through cmd line.
+- Checkpointing / Loading and training existing model saves
 
 
 ## **References**
