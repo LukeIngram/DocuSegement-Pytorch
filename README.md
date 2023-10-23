@@ -1,4 +1,4 @@
-# DocuSegment-Pytorch: Semantic Segmentation for Documents. 
+# DocuSegment-Pytorch: UNet Based Document Segmentation in PyTorch. 
 
 <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-v2.0.1+-red.svg?logo=PyTorch&style=for-the-badge" /></a>
 <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-v3.11+-blue.svg?logo=python&style=for-the-badge" /></a>
@@ -22,7 +22,7 @@ Due to limited data availability, the model is trained on a modified synthetic d
 
 ## **Quick Start**
 
-**Note: Installing CUDA is strongly recommended if you plan on running this locally.**
+**Note: Installing CUDA is strongly recommended for local training.**
 
 1. Install Dependencies: 
 ```bash
@@ -39,9 +39,9 @@ python3 train.py -tdp <PATH TO IMGS DIR> <PATH TO MASKS DIR> -vdp <PATH TO IMGS 
 
 ## **Usage**
 
-You can download the synthetic dataset used from the [data](#data) section, or any other binary segmentation dataset will work.
+For detailed on the synthetic dataset mentioned earlier, see the [data](#data) section.
 
-If you choose to use your own dataset, I recommend a data directory structure resembling the following: 
+If you choose to use your own dataset, the following structure is recommended: 
 ```
 DocuSegment-Pytorch/
 ├── data/
@@ -58,7 +58,6 @@ DocuSegment-Pytorch/
 │  
 ├── src/
 │
-⋮
 ⋮
 └── README.md
 ```
@@ -94,7 +93,7 @@ options:
 ```
 
 
-### **Predictions**
+### **Inference**
 ```console
 > python3 -m predict -h
 usage: predict.py [-h] -w filename [-ip path [path ...]] -odir dir [-sc s]
