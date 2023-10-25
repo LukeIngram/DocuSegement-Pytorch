@@ -6,7 +6,7 @@ from PIL import Image
 
 import torch
 from torch.utils.data import Dataset
-import torchvision.transforms as vT
+import torchvision.transforms as vt
 
 
 SUPPORTED_EXTS = ['.png','.jpeg','.jpg','.ppm','.gif','.tiff','.bmp','.JPG']
@@ -15,9 +15,9 @@ def transform(
         mean=(0.4611, 0.4359, 0.3905), 
         std=(0.2193, 0.2150, 0.2109)
     ): 
-    transforms = vT.Compose([
-        vT.ToTensor(),
-        vT.Normalize(mean, std)
+    transforms = vt.Compose([
+        vt.ToTensor(),
+        vt.Normalize(mean, std)
     ])
     return transforms
 
@@ -31,7 +31,7 @@ def load_img(fname: str) -> Image:
 def preprocess(img, scale_fact: float = 1.0, isMask: bool = False) -> torch.Tensor: 
     h, w = img.size[:2]
     h, w = int(h * scale_fact), int(w * scale_fact)
-    img.thumbnail((h, w), Image.Resampling.LANCZOS)
+    img = img.resize((h, w), Image.Resampling.LANCZOS)
 
     img = np.asarray(img, dtype=np.float32)
 

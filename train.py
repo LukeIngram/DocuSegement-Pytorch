@@ -9,7 +9,6 @@ import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import DataLoader
 from torchsummary import summary
-from torch.cuda import amp
 
 from tqdm import tqdm 
 import matplotlib.pyplot as plt
@@ -61,7 +60,7 @@ def train(
 
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=5)
-    scaler = amp.GradScaler()
+    scaler = torch.cuda.amp.GradScaler()
     criterion = nn.CrossEntropyLoss if (model.n_classes > 2) else nn.BCEWithLogitsLoss()
 
     for epoch in range(1, epochs+1): 
@@ -81,7 +80,7 @@ def train(
                 truth = truth.to(device, dtype=torch.long)
 
                 # Forward Pass
-                with amp.autocast():
+                with torch.autocast(device.type):
                     pred = model(inputs)
 
                     # Compute Loss 
