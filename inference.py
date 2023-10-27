@@ -21,7 +21,10 @@ def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.
 
     with torch.no_grad(): 
         pred = model(img).cpu()
-        logits = F.sigmoid(pred).float()
+        if model.n_classes > 2:
+            logits = F.softmax(pred, dim=1).float()
+        else:
+            logits = F.sigmoid(pred).float()
         logits  = logits.argmax(dim=1)
     
     return logits[0].long().squeeze().numpy()
@@ -38,10 +41,10 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-w', '--weight_file', metavar='filename', required=True, help="The saved model's filename.")
-    parser.add_argument('-ip', '--input_paths', metavar='path', nargs='+', help="Paths to the input(s).")
+    parser.add_argument('-inputs', '--input_paths', metavar='path', nargs='+', help="Paths to the input(s).")
     parser.add_argument('-odir', '--output_dir', metavar='dir', required=True, help="Path to Directory where predictions are saved.")
     parser.add_argument('-sc', '--scale_fact', metavar='s', type=float, default=1.0, help="Factor to reduce / increase the inputs by.")
-    parser.add_argument('-d', '--device', type=str, default='cuda:0', help='Device to run model.')
+    parser.add_argument('-d', '--device', type=str, default='cpu', help='Device to run model.')
     
     return parser.parse_args()
 
@@ -49,7 +52,7 @@ def get_args():
 if __name__ == '__main__': 
     args = get_args()
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(args.device)
 
     try: 
         load = torch.load(os.path.join('models', 'saves', f'{args.weight_file}'), map_location=device)
@@ -60,7 +63,7 @@ if __name__ == '__main__':
                       n_blocks=load['n_blocks'], 
                       start=load['start_channels']
                     ) 
-        mask_vals = state_dict.pop('mask_values', [0, 1])
+        mask_vals = list(range(load['n_classes']))
         model.load_state_dict(state_dict)
         model.to(device)
     
