@@ -2,6 +2,7 @@
 
 import os
 import argparse
+from typing import Dict, List
 
 import torch
 import torch.nn as nn
@@ -20,6 +21,7 @@ from loss import dice_loss, IoU_loss
 from evaluate import evaluate
 
 
+
 def train(
         model: nn.Module, 
         device: str, 
@@ -32,12 +34,14 @@ def train(
         scale_fact: float = 1.0,
         verbose: bool = False,
         use_dice_iou: bool = True, 
-    ):
-
+    ) -> List[Dict[str, float]]:
+    """
+    TODO DOCSTRING
+    """
     training_summary = []
 
     # Create & Load Datasets
-    train = DocumentDataset(*train_data_paths, scale_fact)    
+    train = DocumentDataset(*train_data_paths, scale_fact, isTrain=True)    
     val = DocumentDataset(*validation_data_paths, scale_fact)
 
     args = dict(batch_size=batch_size, num_workers=os.cpu_count(), pin_memory=True)
@@ -151,8 +155,13 @@ def train(
     return training_summary
 
 
+
 # Plots loss, dice, and iou scores & displays to user
-def plot_summary(summary,save_name):
+def plot_summary(summary: List[Dict[str, float]], save_name: str) -> None:
+    """
+    TODO DOCSTRING
+    """
+
     n_plots = len(summary[0]['training'])
     fig, axes = plt.subplots(n_plots, 1, figsize=(10, 10))
 
@@ -188,7 +197,7 @@ def get_args():
     parser.add_argument('-bs', '--batch_size', metavar='b', type=int, default=8, help="Batch Size.")
     parser.add_argument('-c', '--num_classes', metavar='c', type=int, default=2, help='Number of classes')
     parser.add_argument('-sc', '--scale_fact', metavar='s', type=float,default=1, help="Factor to reduce / increase the inputs by.")
-    parser.add_argument('-d', '--device', type=str, default='cuda:0', help='Device to run model.')
+    parser.add_argument('-d', '--device', type=str, default='cpu', help='Device to run model.')
     parser.add_argument('-tdp', '--train_data_paths', metavar='path', type=str, nargs='+', help="Paths of training image and mask directories.")
     parser.add_argument('-vdp', '--validation_data_paths', metavar='path', type=str, nargs='+', help="Paths of validation image and mask directories.")
     parser.add_argument('-sn', '--save_name', metavar='filename', type=str, required=True, help="Same of save file (.pth).")
@@ -197,6 +206,7 @@ def get_args():
     
     return parser.parse_args()
 
+
 if __name__ == '__main__': 
     args = get_args()
     
@@ -204,9 +214,16 @@ if __name__ == '__main__':
         if not os.path.exists(path):
             raise FileNotFoundError(f"Path {path} does not exist.")
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(args.device)
 
-    model =  UNet(n_channels=3, n_classes=2, n_blocks=args.num_blocks, start=args.num_start_channels) 
+
+    model =  UNet(
+        n_channels=3, 
+        n_classes=args.num_classes, 
+        n_blocks=args.num_blocks, 
+        start=args.num_start_channels
+        ) 
+    
     model.to(device)
 
     if args.verbose: 

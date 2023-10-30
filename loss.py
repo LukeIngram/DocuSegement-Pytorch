@@ -1,12 +1,14 @@
 # loss.py
 # Implementations for DICE and IoU loss used for model evaluation
 
+
 import torch
 from torch import Tensor
 
+
 # Reference:
 # Link:  https://github.com/milesial/Pytorch-UNet/blob/master/utils/dice_score.py
-def dice_coeff(input: Tensor, target: Tensor, eps: float = 1e-6): 
+def dice_coeff(input: Tensor, target: Tensor, eps: float = 1e-6) -> Tensor: 
     assert input.size() == target.size()
 
     sum_dim = (-1, -2, -3)
@@ -23,17 +25,23 @@ def dice_coeff(input: Tensor, target: Tensor, eps: float = 1e-6):
     return dice.mean()
 
 
-def multiclass_dice_coeff(input: Tensor, target: Tensor, eps: float = 1e-6):
+
+def multiclass_dice_coeff(input: Tensor, target: Tensor, eps: float = 1e-6) -> Tensor:
     # Average of Dice coefficient for all classes
     return dice_coeff(input.flatten(0, 1), target.flatten(0, 1), eps)
 
 
-def dice_loss(input: Tensor, target: Tensor, multiclass: bool = False):
+
+def dice_loss(input: Tensor, target: Tensor, multiclass: bool = False) -> Tensor:
+    """
+    TODO DOCSTRING 
+    """
     fn = multiclass_dice_coeff if multiclass else dice_coeff
     return 1 - fn(input, target)
 
 
-def IoU_coeff(input: Tensor, target: Tensor, eps: float  = 1e-6):
+
+def IoU_coeff(input: Tensor, target: Tensor, eps: float  = 1e-6) -> Tensor:
     assert input.size() == target.size()
 
     sum_dim = (-1, -2, -3)
@@ -50,11 +58,16 @@ def IoU_coeff(input: Tensor, target: Tensor, eps: float  = 1e-6):
     return iou.mean()
 
 
-def multiclass_IoU_coeff(input: Tensor, target: Tensor, eps: float = 1e-6): 
+
+def multiclass_IoU_coeff(input: Tensor, target: Tensor, eps: float = 1e-6) -> Tensor: 
     return IoU_coeff(input.flatten(0, 1), target.flatten(0, 1), eps) 
 
+
     
-def IoU_loss(input: Tensor, target: Tensor, multiclass: bool = False): 
+def IoU_loss(input: Tensor, target: Tensor, multiclass: bool = False) -> Tensor: 
+    """
+    TODO DOCSTRING
+    """
     fn = multiclass_IoU_coeff if multiclass else IoU_coeff 
     return 1 - fn(input, target) 
 

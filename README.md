@@ -9,9 +9,6 @@
     - [Training](#training)
     - [Predictions](#predictions)
 - [Synthetic Dataset](#synthetic-dataset)
-- [Pre-Trained Models](#pre-trained-models)
-    - [High-Res](#high-resolution)
-    - [Low-Res](#low-resolution)
 - [Results](#results)
 - [Future Work](#future-work)
 - [References](#references)
@@ -30,16 +27,17 @@ pip install -r requirements.txt
 ```
 2. Download Dataset 
 ```bash
-gdown --fuzzy https://drive.google.com/file/d/1xtwNLGGpo9PNyUQrab26elyc10Hvkcgk/view?usp=sharing 
+gdown --fuzzy https://drive.google.com/file/d/1Sej8ssQbp13Dlqdv9EI4SXaUMGLciacK/view?usp=sharing
 ```
 3. Run Training Procedure
 ```bash 
 python3 train.py -tdp <PATH TO IMGS DIR> <PATH TO MASKS DIR> -vdp <PATH TO IMGS DIR> <PATH TO MASKS DIR> -sn <.pth filename> 
 ```
+Resulting weights and training details will be saved to the *runs* and *models/saves* directory. 
 
 ## **Usage**
 
-For detailed on the synthetic dataset mentioned earlier, see the [data](#data) section.
+For detailed on the synthetic dataset mentioned earlier, see the [Synthetic Dataset](#synthetic-dataset) section.
 
 If you choose to use your own dataset, the following structure is recommended: 
 ```
@@ -61,6 +59,8 @@ DocuSegment-Pytorch/
 ⋮
 └── README.md
 ```
+
+You may need to adapt the *DocumentDataset* class in *utils/datasets.py* to suit your dataset. 
 
 ### **Training**
 
@@ -116,23 +116,16 @@ options:
 
 
 
-
-## **Pre-Trained Models** 
-
-### **High Resolution**
-
-TODO
-
-### **Low Resolution** 
-
-TODO
-
-
-
-
 ## **Results**
 
-| Experiment Name | 
+
+| Model Name | Num Params | Supported Size | Validation DICE | Validation IOU | 
+|----|----|----|----|----| 
+| UNet_16 | 1.9M | 480 x 480 | 0.| 0.|
+| UNet_32 | 7.7M | 480 x 480 | 0. | 0.| 
+| UNet_64 | 31M | 480 x 480 | 0. | 0. | 
+
+
 
 
 
@@ -140,7 +133,7 @@ TODO
 
 ## **Future Work**
 
-- SRGAN-Based Upsampling: to allow flexible and accurate training of model on higher resolutions. 
+- Proper Logging instead of printing to stdout
 - Config file based args instead of passing through cmd line.
 - Checkpointing / Loading and training existing model saves
 

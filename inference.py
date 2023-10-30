@@ -12,10 +12,13 @@ from utils.datasets import *
 from models import * 
 
 
-def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.0):
+def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.0) -> np.ndarray:
+    """
+    TODO DOCSTRING
+    """
     model.eval()
 
-    img = preprocess(input, scale_fact, isMask=False)
+    img = DocumentDataset.preprocess(input, DocumentDataset.COMMON, scale_fact, isMask=False)
     img = img.unsqueeze(0) 
     img = img.to(device)
 
@@ -30,10 +33,13 @@ def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.
     return logits[0].long().squeeze().numpy()
 
 
-def mask_2_img(mask: np.array, mask_vals): 
+def mask_2_img(mask: np.ndarray, mask_vals: np.ndarray) -> Image:
+    """
+    TODO DOCSTRING
+    """
     img = np.zeros((mask.shape[-2], mask.shape[-1], 3), dtype=np.uint8)
     for label in mask_vals: 
-                img[mask == label] = DocumentDataset.COLORMAP.get(label)
+                img[mask == label] = DocumentDataset.COLORMAP.get(label)  #TODO REDO
     return Image.fromarray(img)
 
 

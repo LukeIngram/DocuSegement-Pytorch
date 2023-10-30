@@ -1,15 +1,31 @@
 # evaluate.py
 
-import torch
-import torch.nn.functional as F 
-
 from tqdm import tqdm
+from typing import Dict
+
+import torch
+from torch.utils.data import DataLoader
+import torch.nn as nn
+import torch.nn.functional as F 
 
 from loss import * 
 
 
+
 @torch.inference_mode()
-def evaluate(model, loader, device, epoch, epochs, criterion, use_dice_iou: bool = True): 
+def evaluate(
+        model: nn.Module, 
+        loader: DataLoader, 
+        device: torch.device, 
+        epoch: int, 
+        epochs: int, 
+        criterion: nn.Module, 
+        use_dice_iou: bool = True
+    ) -> Dict[str, float]: 
+    """
+    TODO DOCSTRING
+    """
+    
     val_loss, val_dice, val_iou = 0, 0, 0 
 
     with tqdm(loader,desc=f'Epoch {epoch}/{epochs} : val Loss 0') as pbar: 
@@ -40,7 +56,6 @@ def evaluate(model, loader, device, epoch, epochs, criterion, use_dice_iou: bool
             sampleCnt += inputs.shape[0]
 
             pbar.update(1) 
-
             pbar.set_description(f'Epoch {epoch}/{epochs} : val Loss {round(val_loss/sampleCnt, 6)}')
 
     summary = {}

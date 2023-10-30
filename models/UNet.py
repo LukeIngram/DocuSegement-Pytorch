@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from .blocks import * 
 
+
 class UNet(nn.Module): 
     def __init__(self, n_channels, n_classes, n_blocks=4, start=32): 
         super(UNet, self).__init__()
@@ -18,10 +19,12 @@ class UNet(nn.Module):
             Out(start, n_classes)
         )
 
+
     def forward(self, dataIn):
         num_layers = len(self.layers)
 
         outs = [dataIn] # Store outputs for skip connections
+
         for i in range(0, self.n_blocks+1):
             outs.append(self.layers[i].forward(outs[-1]))
 
