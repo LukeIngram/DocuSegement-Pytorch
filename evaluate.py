@@ -22,8 +22,19 @@ def evaluate(
         criterion: nn.Module, 
         use_dice_iou: bool = True
     ) -> Dict[str, float]: 
-    """
-    TODO DOCSTRING
+    
+    """  Evaluate model using a provided validation dataset
+    
+    Args: 
+        model (nn.Module): model
+        loader (DataLoader): Pytorch Dataloader of validation set
+        epoch (int): Current epoch number
+        epochs (int): total number of epochs in training routine
+        criterion (nn.Module): Loss function
+        use_dice_iou (bool): Enable DICE & IoU addition to the provided loss function
+
+    Returns: 
+        Summary: a dictionary containing the loss, DICE, and IoU scores from the evaluation process
     """
     
     val_loss, val_dice, val_iou = 0, 0, 0 

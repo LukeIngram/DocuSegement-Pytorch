@@ -2,7 +2,7 @@
 
 import os
 import argparse
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn as nn
@@ -25,8 +25,8 @@ from evaluate import evaluate
 def train(
         model: nn.Module, 
         device: str, 
-        train_data_paths: tuple,            
-        validation_data_paths: tuple, 
+        train_data_paths: Tuple[str, ...],            
+        validation_data_paths: Tuple[str, ...], 
         save_name: str,
         epochs: int = 15, 
         batch_size: int = 8,
@@ -35,9 +35,25 @@ def train(
         verbose: bool = False,
         use_dice_iou: bool = True, 
     ) -> List[Dict[str, float]]:
+   
+    """ Performs Mini-batch Gradient Descent on a model given the following params
+
+    Args: 
+        model (nn.Module): model
+        device (torch.device): device where model is located
+        train_data_paths: Paths to the training images & masks directories
+        validation_data_paths: Paths to the validation images & mask directories
+        save_name (str): Name of model's save file upon completion of training
+        epochs (int): Total number of training epochs
+        batch_size (int): batch size
+        learning_rate (float): learning rate
+        verbose (bool): Toggle Verbose output
+        use_dice_iou (bool): Enable DICE & IoU addition to the provided loss function
+    
+    Returns: 
+        training_summary (List[Dict]): Contains the training & validation details (Loss, DICE, & IoU) at each epoch. 
     """
-    TODO DOCSTRING
-    """
+
     training_summary = []
 
     # Create & Load Datasets
@@ -155,11 +171,17 @@ def train(
     return training_summary
 
 
-
-# Plots loss, dice, and iou scores & displays to user
+ 
 def plot_summary(summary: List[Dict[str, float]], save_name: str) -> None:
-    """
-    TODO DOCSTRING
+    
+    """ Plots loss, dice, and iou scores, saves to 'runs' directory, & displays to user
+
+    Args: 
+        summary (List[Dict]): Contains the training & validation details (Loss, DICE, & IoU) at each epoch. 
+        save_name (str): filename of trained model 
+
+    Returns: 
+        None
     """
 
     n_plots = len(summary[0]['training'])
@@ -183,6 +205,7 @@ def plot_summary(summary: List[Dict[str, float]], save_name: str) -> None:
 
     fig.suptitle(f"Training Run: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}. Model Save: {save_name}")
     fig.tight_layout(pad=1.0)
+    plt.savefig(os.path.join('runs',f'{save_name}.png'))
     plt.show()
     
 

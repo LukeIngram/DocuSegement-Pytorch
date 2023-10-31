@@ -33,9 +33,6 @@ def multiclass_dice_coeff(input: Tensor, target: Tensor, eps: float = 1e-6) -> T
 
 
 def dice_loss(input: Tensor, target: Tensor, multiclass: bool = False) -> Tensor:
-    """
-    TODO DOCSTRING 
-    """
     fn = multiclass_dice_coeff if multiclass else dice_coeff
     return 1 - fn(input, target)
 
@@ -65,9 +62,6 @@ def multiclass_IoU_coeff(input: Tensor, target: Tensor, eps: float = 1e-6) -> Te
 
     
 def IoU_loss(input: Tensor, target: Tensor, multiclass: bool = False) -> Tensor: 
-    """
-    TODO DOCSTRING
-    """
     fn = multiclass_IoU_coeff if multiclass else IoU_coeff 
     return 1 - fn(input, target) 
 

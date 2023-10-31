@@ -22,6 +22,26 @@ def load_img(fname: str) -> Image:
 
 class DocumentDataset(Dataset): 
 
+    """ A PyTorch Dataset class for loading & transforming document images & masks
+
+    This class is specific to the synthetic dataset used for all experiments, see README
+    for details. 
+
+    Class Attributes: 
+        COLORMAP (Dict): a reference table for class labels & their respective RGB values
+        MEAN (tuple): The mean values for normalization
+        STD (tuple): The standard deviation values for normalization
+        TRAIN (vt.Compose): Transforms applied to training samples
+        COMMON (vt.Compose): Transforms applied to validation / inference samples
+    
+    Args: 
+        img_dir (str): Path to directory containing sample images
+        mask_dir (str): Path to directory containing sample masks
+        scale_fact (float) Scale factor to reduce/enlarge inputs
+        isTrain (bool): Flag indicating if the dataset is used for training for validation
+
+    """
+    
     # Revise constants based on your needs 
     COLORMAP = {
         0 : (0, 0, 0), 
@@ -31,14 +51,24 @@ class DocumentDataset(Dataset):
     MEAN = (0.4611, 0.4359, 0.3905)
     STD = (0.2193, 0.2150, 0.2109) 
 
-    TRAIN = vt.Compose([vt.ToTensor(), vt.RandomGrayscale(p=0.3), vt.Normalize(MEAN, STD)])
+    TRAIN = vt.Compose([vt.ToTensor(), vt.RandomGrayscale(p=0.4), vt.Normalize(MEAN, STD)])
     COMMON = vt.Compose([vt.ToTensor(), vt.Normalize(MEAN, STD)])
 
     @staticmethod
     def preprocess(img: Image, transforms: vt.Compose, scale_fact: float = 1.0, isMask: bool = False) -> torch.Tensor:
-        """
-        TODO DOCSTRING 
+
+        """ Prepossess single image/mask input image
+
+        Args: 
+            img (Image): input image
+            transforms (vt.Compose): transforms to apply to input image
+            scale_fact (float): scale factor to reduce/enlarge the input by
+            isMask (bool): Signals if input is a mask or image
+
+        Returns: 
+            out (torch.Tensor): Preprocessed input
         """ 
+
         h, w = img.size[:2]
         h, w = int(h * scale_fact), int(w * scale_fact)
         img = img.resize((h, w), Image.Resampling.LANCZOS)
@@ -63,6 +93,7 @@ class DocumentDataset(Dataset):
         self.mask_paths = [os.path.join(mask_dir,f) for f in os.listdir(mask_dir)]
         self.scale_fact = scale_fact 
         
+        # Select Appropriate preprocessing transforms
         if isTrain: 
             self.transforms = self.TRAIN
         else: 
@@ -74,7 +105,7 @@ class DocumentDataset(Dataset):
         return len(self.img_paths)
     
     
-    def __getitem__(self, index) -> [torch.Tensor, torch.Tensor]: 
+    def __getitem__(self, index: int) -> [torch.Tensor, torch.Tensor]: 
         img_path = self.img_paths[index]
         mask_path = self.mask_paths[index]
 

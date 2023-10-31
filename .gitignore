@@ -163,6 +163,9 @@ cython_debug/
 data/*/
 *.zip
 
+# Pretrained & Evals 
+*.pth
+runs/*.png
 
 # darwin
 .DS_store

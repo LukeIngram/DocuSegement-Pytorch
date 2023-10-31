@@ -12,10 +12,20 @@ from utils.datasets import *
 from models import * 
 
 
-def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.0) -> np.ndarray:
+def predict(model: torch.nn.Module, input: Image, device: torch.device, scale_fact: float = 1.0) -> np.ndarray:
+
+    """ Preprocess and performs a forward pass on a single input image.
+
+    Args: 
+        model (nn.Module): model
+        input (Image): Input Image
+        device (torch.device): device where model is located
+        scale_fact (float): Scale factor to reduce/enlarge the input image by 
+
+    Returns: 
+        logits (np.ndarray): Model's predicted segmentation of the input 
     """
-    TODO DOCSTRING
-    """
+
     model.eval()
 
     img = DocumentDataset.preprocess(input, DocumentDataset.COMMON, scale_fact, isMask=False)
@@ -34,12 +44,20 @@ def predict(model: torch.nn.Module, input: Image, device, scale_fact: float = 1.
 
 
 def mask_2_img(mask: np.ndarray, mask_vals: np.ndarray) -> Image:
+
+    """ Converts a segmentation mask into an image
+    
+    Args: 
+        mask (np.ndarray): input mask
+        mask_vals (np.ndarray): vector containing the unique mask values
+
+    Returns: 
+        Image: output image
     """
-    TODO DOCSTRING
-    """
+
     img = np.zeros((mask.shape[-2], mask.shape[-1], 3), dtype=np.uint8)
     for label in mask_vals: 
-                img[mask == label] = DocumentDataset.COLORMAP.get(label)  #TODO REDO
+                img[mask == label] = DocumentDataset.COLORMAP.get(label)
     return Image.fromarray(img)
 
 
