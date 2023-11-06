@@ -4,9 +4,9 @@
 <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-v3.11+-blue.svg?logo=python&style=for-the-badge" /></a>
 
 
-TODO ADD SAMPLE
+A custom implementation of the UNet architecture, designed and tuned specifically for the task of binary segmentation of documents and backgrounds.
 
-
+![intro figure](samples/figures/intro.png)
 
 ### **Contents**
 - [Usage](#usage)
@@ -17,9 +17,7 @@ TODO ADD SAMPLE
 - [Future Work](#future-work)
 - [References](#references)
 
-A custom implementation of the UNet architecture, designed and tuned specifically for the task of binary segmentation of documents and backgrounds.
-
-Due to limited data availability, the model is trained on a modified synthetic dataset, more on this [here](#data). 
+Due to limited data availability, the model is trained on a modified synthetic dataset, more on this [here](#synthetic-dataset). 
 
 
 ## **Usage**
@@ -111,16 +109,16 @@ options:
   -d DEVICE, --device DEVICE
                         Device to run model.
 ```
-
+Weight files must be stored in the *models/saves* 
 
 
 ## **Synthetic Dataset**
 
 
+tehwq
+
 
 ## **Results**
-
-TODO ADD 3 ROW 3 COLUMN EXAMPLE
 
 All provided models were trained with the following specifics: 
 
@@ -132,22 +130,22 @@ All provided models were trained with the following specifics:
 
 | Model Name | Num Params | Supported Size | Validation DICE | Validation IOU | 
 |----|----|----|----|----| 
-| uner_16 | 1.9M | 480 x 480 | 0.| 0.|
-| unet_32 | 7.7M | 480 x 480 | 0. | 0.| 
-| unet_64 | 31M | 480 x 480 | 0. | 0. | 
+| unet_16 | 1.9M | 480 x 480 | 0.970725 | 0.945591 | 
+| unet_32 | 7.7M | 480 x 480 | 0.981021| 0.960021 |
 
+The '16' and '32' refer to the number of filters in the first convolutionary block.
 
 These models are all available for download via *scripts/downloadWeights.sh*
 
-Ex:
 ```bash 
-bash scripts/downloadWeights.sh unet_32 
+bash scripts/downloadWeights.sh <MODEL NAME> 
 ```
 
 ## **Future Work**
 
+- Flexible BasicDocumentDataset class for easy training on custom datasets 
 - Proper Logging instead of printing to stdout
-- Config file based args instead of passing through cmd line.
+- Config file based experiment setup 
 - Checkpointing / Loading and training existing model saves
 
 
@@ -155,4 +153,4 @@ bash scripts/downloadWeights.sh unet_32
 
 TODO dataset reference 
 
-TODO UNet Reference 
+Olaf Ronneberger, Philipp Fischer, and Thomas Brox, "U-Net: Convolutional Networks for Biomedical Image Segmentation," arXiv preprint arXiv:1505.04597 (2015)​. [Link](https://arxiv.org/abs/1505.04597).

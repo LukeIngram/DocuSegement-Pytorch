@@ -2,6 +2,6 @@
 
 
 URL="https://drive.google.com/file/d/1Sej8ssQbp13Dlqdv9EI4SXaUMGLciacK/view?usp=sharing"
-DIR=./data
+DIR=./data/
 
 gdown --fuzzy $URL --output $DIR

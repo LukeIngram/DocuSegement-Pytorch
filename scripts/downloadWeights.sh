@@ -1,23 +1,19 @@
 # downloadWeights.sh
 
-
+#TODO ADD URLS
 FILE=$1
 DIR=./models/saves
 
-if [ "$FILE" == "UNet_16" ]; then 
-    URL=""
+if [ "$FILE" == "unet_16" ]; then 
+    URL="https://huggingface.co/Lingram/DocuSegment-Pytorch/resolve/main/unet_16.pth"
     wget $URL -P $DIR
 
-elif [ "$FILE" == "UNet_32" ]; then
-    URL=""
-    wget $URL -P $DIR
-
-elif [ "$FILE" == "UNet_64" ]; then 
-    URL=""
+elif [ "$FILE" == "unet_32" ]; then
+    URL="https://huggingface.co/Lingram/DocuSegment-Pytorch/resolve/main/unet_32.pth"
     wget $URL -P $DIR
 
 else
-    echo "Options: UNet_16, UNet_32, UNet_64"
+    echo "Options: unet_16, unet_32"
     exit 1
 fi 
 
