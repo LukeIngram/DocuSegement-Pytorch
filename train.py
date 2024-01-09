@@ -9,7 +9,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import DataLoader
-from torchsummary import summary
 
 from tqdm import tqdm 
 import matplotlib.pyplot as plt
@@ -248,9 +247,6 @@ if __name__ == '__main__':
         ) 
     
     model.to(device)
-
-    if args.verbose: 
-        print(summary(model, (3, 244, 244)))
 
     try:
         data = train(

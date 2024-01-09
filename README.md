@@ -151,6 +151,11 @@ bash scripts/downloadWeights.sh <MODEL NAME>
 
 ## **References**
 
-TODO dataset reference 
+#### Data
+* "Preparing Synthetic Dataset For Robust Document Segmentation," LearnOpenCV, Deep Learning-based Document Segmentation Using Semantic Segmentation with DeepLabV3 on a Custom Dataset. [Link](https://learnopencv.com/deep-learning-based-document-segmentation-using-semantic-segmentation-deeplabv3-on-custom-dataset/#Preparing-Synthetic-Dataset-For-Robust-Document-Segmentation)
 
-Olaf Ronneberger, Philipp Fischer, and Thomas Brox, "U-Net: Convolutional Networks for Biomedical Image Segmentation," arXiv preprint arXiv:1505.04597 (2015)​. [Link](https://arxiv.org/abs/1505.04597).
+#### Research
+
+* Olaf Ronneberger, Philipp Fischer, and Thomas Brox, "U-Net: Convolutional Networks for Biomedical Image Segmentation," arXiv preprint arXiv:1505.04597 (2015)​. [Link](https://arxiv.org/abs/1505.04597)
+
+* Ke Ma, Zhixin Shu, Xue Bai, Jue Wang, Dimitris Samaras, "DocUNet: Document Image Unwarping via A Stacked U-Net", Stony Brook University & Megvii Inc.​ [Link](https://www3.cs.stonybrook.edu/~cvl/docunet.html)
